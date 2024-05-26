@@ -10,6 +10,7 @@ import (
 
 const (
 	Exit = "exit"
+	Echo = "echo"
 )
 
 func main() {
@@ -40,6 +41,8 @@ func evaluate(line string) string {
 			}
 		}
 		os.Exit(status)
+	case strings.HasPrefix(line, Echo):
+		return strings.TrimLeft(line, Echo+" ")
 	default:
 		return fmt.Sprintf("%s: command not found", line)
 	}
