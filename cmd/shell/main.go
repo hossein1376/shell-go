@@ -11,6 +11,7 @@ import (
 const (
 	Exit = "exit"
 	Echo = "echo"
+	Type = "type"
 )
 
 func main() {
@@ -41,10 +42,36 @@ func evaluate(line string) string {
 			}
 		}
 		os.Exit(status)
+
 	case strings.HasPrefix(line, Echo):
 		return strings.TrimLeft(line, Echo+" ")
+
+	case strings.HasPrefix(line, Type):
+		p := strings.Split(line, " ")
+		if len(p) != 2 {
+			return fmt.Sprintf("invalid number of arguments")
+		}
+
+		if isBuiltIn(p[1]) {
+			return fmt.Sprintf("%s is a shell builtin", p[1])
+		}
+		return fmt.Sprintf("%s: not found", p[1])
+
 	default:
 		return fmt.Sprintf("%s: command not found", line)
 	}
 	return ""
+}
+
+func isBuiltIn(cmd string) bool {
+	switch cmd {
+	case "exit":
+		return true
+	case "echo":
+		return true
+	case "type":
+		return true
+	default:
+		return false
+	}
 }
