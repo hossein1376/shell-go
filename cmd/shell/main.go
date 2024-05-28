@@ -45,7 +45,8 @@ func evaluate(line string) string {
 		os.Exit(status)
 
 	case strings.HasPrefix(line, Echo):
-		return strings.TrimLeft(line, Echo+" ")
+		echo, _ := strings.CutPrefix(line, Echo+" ")
+		return echo
 
 	case strings.HasPrefix(line, Type):
 		p := strings.Split(line, " ")
@@ -65,7 +66,7 @@ func evaluate(line string) string {
 			return path
 		}
 
-		return fmt.Sprintf("%s: command not found", p[1])
+		return fmt.Sprintf("%s: not found", p[1])
 
 	default:
 		return fmt.Sprintf("%s: command not found", line)
@@ -95,7 +96,7 @@ func isInPath(cmd string) (string, error) {
 	for _, dir := range strings.Split(path, ":") {
 		contents, err := os.ReadDir(dir)
 		if err != nil {
-			return "", fmt.Errorf("reading path directory: %w", err)
+			continue
 		}
 
 		for _, file := range contents {
