@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -55,7 +56,16 @@ func evaluate(line string) string {
 		if isBuiltIn(p[1]) {
 			return fmt.Sprintf("%s is a shell builtin", p[1])
 		}
-		return fmt.Sprintf("%s: not found", p[1])
+
+		path, err := isInPath(p[1])
+		if err != nil {
+			return err.Error()
+		}
+		if path != "" {
+			return path
+		}
+
+		return fmt.Sprintf("%s: command not found", p[1])
 
 	default:
 		return fmt.Sprintf("%s: command not found", line)
@@ -74,4 +84,28 @@ func isBuiltIn(cmd string) bool {
 	default:
 		return false
 	}
+}
+
+func isInPath(cmd string) (string, error) {
+	path, ok := os.LookupEnv("PATH")
+	if !ok {
+		return "", fmt.Errorf("PATH not set")
+	}
+
+	for _, dir := range strings.Split(path, ":") {
+		contents, err := os.ReadDir(dir)
+		if err != nil {
+			return "", fmt.Errorf("reading path directory: %w", err)
+		}
+
+		for _, file := range contents {
+			if file.IsDir() {
+				continue
+			}
+			if file.Name() == cmd {
+				return fmt.Sprintf("%s is %s", cmd, filepath.Join(dir, file.Name())), nil
+			}
+		}
+	}
+	return "", nil
 }
