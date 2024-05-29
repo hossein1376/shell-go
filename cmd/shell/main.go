@@ -14,6 +14,7 @@ const (
 	Exit = "exit"
 	Echo = "echo"
 	Type = "type"
+	CD   = "cd"
 )
 
 func main() {
@@ -53,41 +54,48 @@ func evaluate(line string) string {
 		return ""
 	}
 
-	switch {
-	case strings.HasPrefix(line, Exit):
+	switch parts[0] {
+	case Exit:
 		status := 0
-		if p := strings.Split(line, " "); len(p) == 2 {
-			var err error
-			status, err = strconv.Atoi(p[1])
+		if len(parts) == 2 {
+			status, err = strconv.Atoi(parts[1])
 			if err != nil || status < 0 || status > 255 {
-				return fmt.Sprintf("invalid exit status: %s", p[1])
+				return fmt.Sprintf("invalid exit status: %s", parts[1])
 			}
 		}
 		os.Exit(status)
 
-	case strings.HasPrefix(line, Echo):
+	case Echo:
 		echo, _ := strings.CutPrefix(line, Echo+" ")
 		return echo
 
-	case strings.HasPrefix(line, Type):
-		p := strings.Split(line, " ")
-		if len(p) != 2 {
+	case Type:
+		if len(parts) != 2 {
 			return fmt.Sprintf("invalid number of arguments")
 		}
 
-		if isBuiltIn(p[1]) {
-			return fmt.Sprintf("%s is a shell builtin", p[1])
+		if isBuiltIn(parts[1]) {
+			return fmt.Sprintf("%s is a shell builtin", parts[1])
 		}
 
-		path, err := isInPath(p[1])
+		path, err := isInPath(parts[1])
 		if err != nil {
 			return err.Error()
 		}
 		if path != "" {
-			return fmt.Sprintf("%s is %s", p[1], path)
+			return fmt.Sprintf("%s is %s", parts[1], path)
 		}
 
-		return fmt.Sprintf("%s: not found", p[1])
+		return fmt.Sprintf("%s: not found", parts[1])
+
+	case CD:
+		if len(parts) != 2 {
+			return fmt.Sprintf("invalid number of arguments")
+		}
+		if err = os.Chdir(parts[1]); err != nil {
+			return fmt.Sprintf("%s: No such file or directory", parts[1])
+		}
+		return ""
 	}
 
 	return fmt.Sprintf("%s: command not found", line)
