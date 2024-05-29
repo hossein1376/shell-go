@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -27,11 +28,31 @@ func main() {
 		}
 
 		resp := evaluate(strings.TrimSpace(line))
-		fmt.Println(resp)
+		if resp != "" {
+			fmt.Println(resp)
+		}
 	}
 }
 
 func evaluate(line string) string {
+	if line == "" {
+		return ""
+	}
+	parts := strings.Split(line, " ")
+	app, err := isInPath(parts[0])
+	if err != nil {
+		return err.Error()
+	}
+	if app != "" {
+		command := exec.Command(app, parts[1:]...)
+		command.Stdout = os.Stdout
+		command.Stderr = os.Stderr
+		if err := command.Run(); err != nil {
+			return err.Error()
+		}
+		return ""
+	}
+
 	switch {
 	case strings.HasPrefix(line, Exit):
 		status := 0
@@ -63,15 +84,13 @@ func evaluate(line string) string {
 			return err.Error()
 		}
 		if path != "" {
-			return path
+			return fmt.Sprintf("%s is %s", p[1], path)
 		}
 
 		return fmt.Sprintf("%s: not found", p[1])
-
-	default:
-		return fmt.Sprintf("%s: command not found", line)
 	}
-	return ""
+
+	return fmt.Sprintf("%s: command not found", line)
 }
 
 func isBuiltIn(cmd string) bool {
@@ -104,7 +123,7 @@ func isInPath(cmd string) (string, error) {
 				continue
 			}
 			if file.Name() == cmd {
-				return fmt.Sprintf("%s is %s", cmd, filepath.Join(dir, file.Name())), nil
+				return filepath.Join(dir, file.Name()), nil
 			}
 		}
 	}
