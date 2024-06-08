@@ -15,6 +15,12 @@ const (
 	Echo = "echo"
 	Type = "type"
 	CD   = "cd"
+	PWD  = "pwd"
+)
+
+const (
+	HOME  = "HOME"
+	Tilde = "~"
 )
 
 func main() {
@@ -92,10 +98,24 @@ func evaluate(line string) string {
 		if len(parts) != 2 {
 			return fmt.Sprintf("invalid number of arguments")
 		}
-		if err = os.Chdir(parts[1]); err != nil {
-			return fmt.Sprintf("%s: No such file or directory", parts[1])
+		arg := parts[1]
+		if arg == Tilde {
+			arg = os.Getenv(HOME)
+		}
+		if err = os.Chdir(arg); err != nil {
+			return fmt.Sprintf("%s: No such file or directory", arg)
 		}
 		return ""
+
+	case PWD:
+		if len(parts) != 1 {
+			return fmt.Sprintf("invalid number of arguments")
+		}
+		pwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Sprintf("error fetting working directory: %s", err)
+		}
+		return pwd
 	}
 
 	return fmt.Sprintf("%s: command not found", line)
